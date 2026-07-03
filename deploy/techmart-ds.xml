@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Deployable MySQL datasource for WildFly with connection pooling optimized
+  for 10,000+ concurrent users. Copy to $WILDFLY_HOME/standalone/deployments/
+  (the MySQL JDBC driver module must be installed first - see README / install.cli).
+-->
+<datasources xmlns="http://www.jboss.org/ironjacamar/schema">
+    <datasource jndi-name="java:jboss/datasources/TechMartDS"
+                pool-name="TechMartDS"
+                enabled="true"
+                use-java-context="true"
+                statistics-enabled="true">
+        <connection-url>jdbc:mysql://localhost:3306/techmart?useSSL=false&amp;serverTimezone=UTC&amp;rewriteBatchedStatements=true&amp;cachePrepStmts=true&amp;useServerPrepStmts=true</connection-url>
+        <driver>mysql</driver>
+
+        <!-- ================= Connection pool tuning ================= -->
+        <pool>
+            <min-pool-size>20</min-pool-size>
+            <initial-pool-size>20</initial-pool-size>
+            <max-pool-size>200</max-pool-size>
+            <prefill>true</prefill>
+            <flush-strategy>IdleConnections</flush-strategy>
+        </pool>
+
+        <security>
+            <user-name>techmart</user-name>
+            <password>techmart</password>
+        </security>
+
+        <!-- Keep-alive + leak protection for the 99.9% uptime target. -->
+        <validation>
+            <valid-connection-checker class-name="org.jboss.jca.adapters.jdbc.extensions.mysql.MySQLValidConnectionChecker"/>
+            <background-validation>true</background-validation>
+            <background-validation-millis>30000</background-validation-millis>
+            <exception-sorter class-name="org.jboss.jca.adapters.jdbc.extensions.mysql.MySQLExceptionSorter"/>
+        </validation>
+        <timeout>
+            <blocking-timeout-millis>5000</blocking-timeout-millis>
+            <idle-timeout-minutes>5</idle-timeout-minutes>
+        </timeout>
+
+        <!-- Server-side prepared-statement cache to cut parse overhead. -->
+        <statement>
+            <prepared-statement-cache-size>64</prepared-statement-cache-size>
+            <share-prepared-statements>true</share-prepared-statements>
+        </statement>
+    </datasource>
+</datasources>

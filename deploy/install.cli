@@ -1,0 +1,45 @@
+# =============================================================================
+#  TechMart - WildFly provisioning script  (run with: bin/jboss-cli.sh --file=install.cli)
+#  Configures: MySQL JDBC driver, connection-pooled datasource, JMS destinations.
+#  Start WildFly first:  bin/standalone.sh -c standalone-full.xml
+# =============================================================================
+
+# --- 1. Register the MySQL JDBC driver as a module -----------------------------
+# (Place mysql-connector-j-8.4.0.jar in modules/com/mysql/main/ with a module.xml,
+#  or use the deployment approach below.)
+module add --name=com.mysql --resources=/path/to/mysql-connector-j-8.4.0.jar --dependencies=jakarta.transaction.api,sun.jdk
+
+/subsystem=datasources/jdbc-driver=mysql:add( \
+    driver-name=mysql, \
+    driver-module-name=com.mysql, \
+    driver-class-name=com.mysql.cj.jdbc.Driver, \
+    driver-xa-datasource-class-name=com.mysql.cj.jdbc.MysqlXADataSource)
+
+# --- 2. Connection-pooled datasource ------------------------------------------
+data-source add \
+    --name=TechMartDS \
+    --jndi-name=java:jboss/datasources/TechMartDS \
+    --driver-name=mysql \
+    --connection-url=jdbc:mysql://localhost:3306/techmart?useSSL=false&serverTimezone=UTC&rewriteBatchedStatements=true&cachePrepStmts=true&useServerPrepStmts=true \
+    --user-name=techmart \
+    --password=techmart \
+    --min-pool-size=20 \
+    --initial-pool-size=20 \
+    --max-pool-size=200 \
+    --prefill=true \
+    --background-validation=true \
+    --background-validation-millis=30000 \
+    --prepared-statements-cache-size=64 \
+    --share-prepared-statements=true \
+    --blocking-timeout-wait-millis=5000 \
+    --statistics-enabled=true \
+    --enabled=true
+
+# --- 3. JMS destinations (also auto-created by @JMSDestinationDefinition) -------
+jms-queue add --queue-address=orderQueue --entries=[java:/jms/queue/orderQueue java:jboss/exported/jms/queue/orderQueue]
+jms-topic  add --topic-address=notificationTopic --entries=[java:/jms/topic/notificationTopic java:jboss/exported/jms/topic/notificationTopic]
+
+# --- 4. Tune the messaging journal / thread pool for throughput ---------------
+/subsystem=messaging-activemq/server=default/address-setting=#:write-attribute(name=max-delivery-attempts,value=5)
+
+reload

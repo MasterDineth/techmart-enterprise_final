@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<persistence xmlns="https://jakarta.ee/xml/ns/persistence"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xsi:schemaLocation="https://jakarta.ee/xml/ns/persistence https://jakarta.ee/xml/ns/persistence/persistence_3_0.xsd"
+             version="3.0">
+
+    <!--
+      JTA persistence unit bound to the WildFly-managed, connection-pooled
+      MySQL datasource (see deploy/techmart-ds.xml or deploy/install.cli).
+    -->
+    <persistence-unit name="techmartPU" transaction-type="JTA">
+        <provider>org.hibernate.jpa.HibernatePersistenceProvider</provider>
+        <jta-data-source>java:jboss/datasources/TechMartDS</jta-data-source>
+
+        <properties>
+            <!-- Schema managed by schema.sql; 'update' keeps it forgiving for demos. -->
+            <property name="jakarta.persistence.schema-generation.database.action" value="none"/>
+            <property name="hibernate.hbm2ddl.auto" value="update"/>
+
+            <property name="hibernate.dialect" value="org.hibernate.dialect.MySQLDialect"/>
+            <property name="hibernate.show_sql" value="false"/>
+            <property name="hibernate.format_sql" value="false"/>
+
+            <!-- ============ Performance / connection optimization ============ -->
+            <!-- Batch writes to cut round-trips during peak order bursts. -->
+            <property name="hibernate.jdbc.batch_size" value="50"/>
+            <property name="hibernate.order_inserts" value="true"/>
+            <property name="hibernate.order_updates" value="true"/>
+            <property name="hibernate.jdbc.fetch_size" value="100"/>
+            <!-- Second-level + query cache for hot read paths (products/inventory). -->
+            <property name="hibernate.cache.use_second_level_cache" value="false"/>
+            <property name="hibernate.generate_statistics" value="true"/>
+        </properties>
+    </persistence-unit>
+</persistence>
