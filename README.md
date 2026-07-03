@@ -222,4 +222,6 @@ deploy/
 
 db/
   schema.sql       MySQL DDL + user creation
+  
+  mvnw            Maven wrapper
 ```
