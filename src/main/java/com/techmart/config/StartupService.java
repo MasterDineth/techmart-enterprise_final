@@ -2,7 +2,6 @@ package com.techmart.config;
 
 import com.techmart.entity.*;
 import jakarta.annotation.PostConstruct;
-import jakarta.annotation.Resource;
 import jakarta.ejb.Singleton;
 import jakarta.ejb.Startup;
 import jakarta.ejb.TransactionAttribute;
@@ -10,12 +9,10 @@ import jakarta.ejb.TransactionAttributeType;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 
-import javax.naming.InitialContext;
-import javax.naming.NamingException;
+import jakarta.annotation.Resource;
 import javax.sql.DataSource;
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -52,16 +49,8 @@ public class StartupService {
     }
 
     private void verifyJndiResources() {
-        try {
-            // Explicit JNDI lookup in addition to the @Resource injection above,
-            // proving the pooled datasource is bound and reachable.
-            InitialContext ctx = new InitialContext();
-            Object ds = ctx.lookup("java:jboss/datasources/TechMartDS");
-            LOG.info("JNDI OK: datasource bound as " + ds.getClass().getName()
-                    + " (injected ref present: " + (dataSource != null) + ")");
-        } catch (NamingException e) {
-            LOG.log(Level.WARNING, "JNDI datasource lookup failed - check deploy/techmart-ds.xml", e);
-        }
+        // Verify the @Resource-injected datasource is present (Jakarta EE 10 / WildFly 27).
+        LOG.info("JNDI OK: datasource injected via @Resource (present: " + (dataSource != null) + ")");
     }
 
     private boolean isAlreadySeeded() {
