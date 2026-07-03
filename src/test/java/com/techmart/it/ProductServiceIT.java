@@ -28,6 +28,9 @@ class ProductServiceIT {
     static WebArchive createDeployment() {
         return ShrinkWrap.create(WebArchive.class, "test.war")
                 .addPackages(true, "com.techmart")
+                // JMS destinations are provided by the target server; excluding
+                // JmsConfig avoids re-declaring them (DuplicateServiceException).
+                .deleteClass(JmsConfig.class)
                 .addAsResource("META-INF/persistence.xml")
                 .addAsWebInfResource(EmptyAsset.INSTANCE, "beans.xml");
     }

@@ -59,7 +59,7 @@ public class OrderService {
      */
     public OrderEntity placeOrder(PlaceOrderRequest request) {
         if (request.getLines() == null || request.getLines().isEmpty()) {
-            throw new IllegalArgumentException("Order must contain at least one line");
+            throw new InvalidOrderException("Order must contain at least one line");
         }
 
         Customer customer = customerService.findOrCreate(request.getCustomerName(), request.getCustomerEmail());
@@ -72,7 +72,7 @@ public class OrderService {
         for (OrderLineRequest line : request.getLines()) {
             Product product = productService.find(line.getProductId());
             if (product == null) {
-                throw new IllegalArgumentException("Unknown product: " + line.getProductId());
+                throw new InvalidOrderException("Unknown product: " + line.getProductId());
             }
             // Reserve first - throws InsufficientStockException (rollback) if short.
             inventoryService.reserve(product.getId(), line.getQuantity());
