@@ -10,6 +10,9 @@
   header{background:linear-gradient(135deg,#1e40af,#7c3aed);padding:1rem 2rem;display:flex;align-items:center;gap:1rem;box-shadow:0 2px 12px #0008}
   header h1{font-size:1.5rem;font-weight:700;letter-spacing:.5px}
   header .badge{background:#10b981;color:#fff;padding:.2rem .6rem;border-radius:999px;font-size:.75rem;font-weight:600}
+  .user-info{margin-left:auto;display:flex;align-items:center;gap:1rem;font-size:.85rem}
+  .user-info .logout-btn{background:#ef4444;color:#fff;padding:.4rem .8rem;border:none;border-radius:4px;cursor:pointer;font-size:.75rem}
+  .user-info .logout-btn:hover{opacity:.9}
   .layout{display:grid;grid-template-columns:1fr 340px;gap:1.5rem;padding:1.5rem;max-width:1400px;margin:0 auto}
   @media(max-width:900px){.layout{grid-template-columns:1fr}}
   .card{background:#1e293b;border-radius:12px;padding:1.25rem;border:1px solid #334155}
@@ -84,11 +87,35 @@
   <h1>⚡ TechMart Enterprise</h1>
   <span class="badge">Live Dashboard</span>
   <span id="sseStatus" class="conn-status conn-err" style="margin-left:auto">SSE: connecting…</span>
+  <div class="user-info">
+    <span id="current-user">Loading...</span>
+    <button class="logout-btn" onclick="handleLogout()">Logout</button>
+  </div>
 </header>
 
 <div class="layout">
   <!-- LEFT COLUMN -->
   <div style="display:flex;flex-direction:column;gap:1.5rem">
+
+    <!-- Test Controls for Concurrent Logins -->
+    <div class="card">
+      <h2>🧪 Concurrent Login Test</h2>
+      <div style="background:#0f172a;border:1px solid #334155;border-radius:8px;padding:1rem;margin-bottom:1rem">
+        <h3 style="color:#94a3b8;font-size:.85rem;margin-bottom:.75rem">Simulate Multiple Users</h3>
+        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:.5rem;margin-bottom:.75rem">
+          <div>
+            <label style="font-size:.7rem;color:#94a3b8">Number of Users:</label>
+            <input type="number" id="test-users" style="background:#1e293b;border:1px solid #334155;border-radius:4px;padding:.4rem;color:#e2e8f0;font-size:.75rem;width:100%" value="5" min="1" max="50"/>
+          </div>
+          <div>
+            <label style="font-size:.7rem;color:#94a3b8">Requests per User:</label>
+            <input type="number" id="test-requests" style="background:#1e293b;border:1px solid #334155;border-radius:4px;padding:.4rem;color:#e2e8f0;font-size:.75rem;width:100%" value="10" min="1" max="100"/>
+          </div>
+        </div>
+        <button class="btn btn-primary" style="margin-top:.75rem;background:#334155;margin-bottom:.75rem" onclick="startConcurrentTest()">▶ Start Load Test</button>
+        <div id="test-results" style="font-size:.75rem;color:#93c5fd;display:none"></div>
+      </div>
+    </div>
 
     <!-- Metrics -->
     <div class="card">
@@ -152,6 +179,94 @@
 const API = 'api';
 const cart = {}; // productId -> {name, price, qty}
 let products = [];
+let currentSessionToken = null;
+let currentUserId = null;
+let currentUsername = null;
+
+// ── Session Management ────────────────────────────────────────────────────────
+function initSession() {
+  const params = new URLSearchParams(window.location.search);
+  currentSessionToken = params.get('token');
+  
+  if (!currentSessionToken) {
+    window.location.href = 'login.html';
+    return;
+  }
+
+  validateSession();
+}
+
+async function validateSession() {
+  try {
+    const res = await fetch(`${API}/auth/validate`, {
+      headers: { 'X-Session-Token': currentSessionToken }
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      currentUserId = data.userId;
+      currentUsername = data.username;
+      document.getElementById('current-user').textContent = `👤 ${data.username} (${data.concurrentSessions} sessions)`;
+    } else {
+      window.location.href = 'login.html';
+    }
+  } catch (e) {
+    console.error('Session validation failed:', e);
+    window.location.href = 'login.html';
+  }
+}
+
+async function handleLogout() {
+  try {
+    await fetch(`${API}/auth/logout`, {
+      method: 'POST',
+      headers: { 'X-Session-Token': currentSessionToken }
+    });
+  } catch (e) {
+    console.error('Logout error:', e);
+  }
+  window.location.href = 'login.html';
+}
+
+// ── Concurrent Load Test ──────────────────────────────────────────────────────
+async function startConcurrentTest() {
+  const numUsers = parseInt(document.getElementById('test-users').value);
+  const numRequests = parseInt(document.getElementById('test-requests').value);
+  const resultsDiv = document.getElementById('test-results');
+
+  resultsDiv.style.display = 'block';
+  resultsDiv.innerHTML = '⏳ Running ' + (numUsers * numRequests) + ' concurrent requests...';
+
+  const startTime = performance.now();
+  const results = { success: 0, failure: 0, totalTime: 0 };
+
+  const promises = [];
+  for (let u = 0; u < numUsers; u++) {
+    for (let r = 0; r < numRequests; r++) {
+      promises.push(
+        fetch(`${API}/metrics`, { headers: { 'X-Session-Token': currentSessionToken } })
+          .then(res => {
+            if (res.ok) results.success++;
+            else results.failure++;
+            return res.ok;
+          })
+          .catch(() => results.failure++)
+      );
+    }
+  }
+
+  await Promise.all(promises);
+  const totalTime = performance.now() - startTime;
+  results.totalTime = totalTime;
+
+  const tps = (numUsers * numRequests) / (totalTime / 1000);
+  resultsDiv.innerHTML = `
+    ✅ Test Complete<br/>
+    Success: ${results.success} | Failures: ${results.failure}<br/>
+    Total Time: ${totalTime.toFixed(2)}ms<br/>
+    Throughput: ${tps.toFixed(2)} req/s
+  `;
+}
 
 // ── SSE ──────────────────────────────────────────────────────────────────────
 function connectSSE() {
@@ -186,7 +301,7 @@ function addNotif(type, data) {
 
 // ── Products ─────────────────────────────────────────────────────────────────
 async function loadProducts() {
-  const res = await fetch(`${API}/products`);
+  const res = await fetch(`${API}/products`, { headers: { 'X-Session-Token': currentSessionToken } });
   products = await res.json();
   const grid = document.getElementById('product-grid');
   grid.innerHTML = '';
@@ -271,7 +386,7 @@ async function checkout() {
     lines: entries.map(([id,{qty}]) => ({ productId: parseInt(id), quantity: qty }))
   };
   try {
-    const res = await fetch(`${API}/orders`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    const res = await fetch(`${API}/orders`, { method:'POST', headers:{'Content-Type':'application/json', 'X-Session-Token': currentSessionToken}, body: JSON.stringify(body) });
     const data = await res.json();
     if (res.ok) {
       showAlert(alertEl,'success',`Order #${data.id} placed! Status: ${data.status}`);
@@ -294,7 +409,7 @@ function showAlert(el, type, msg) {
 
 // ── Orders ───────────────────────────────────────────────────────────────────
 async function loadOrders() {
-  const res = await fetch(`${API}/orders`);
+  const res = await fetch(`${API}/orders`, { headers: { 'X-Session-Token': currentSessionToken } });
   const orders = await res.json();
   const tbody = document.getElementById('orders-body');
   if (!orders.length) { tbody.innerHTML='<tr><td colspan="5" class="empty">No orders yet</td></tr>'; return; }
@@ -310,7 +425,7 @@ async function loadOrders() {
 
 // ── Metrics ──────────────────────────────────────────────────────────────────
 async function loadMetrics() {
-  const res = await fetch(`${API}/metrics`);
+  const res = await fetch(`${API}/metrics`, { headers: { 'X-Session-Token': currentSessionToken } });
   const m = await res.json();
   document.getElementById('m-accepted').textContent  = m.ordersAccepted;
   document.getElementById('m-processed').textContent = m.ordersProcessed;
@@ -337,6 +452,7 @@ function escHtml(s) {
 }
 
 // ── Init ─────────────────────────────────────────────────────────────────────
+initSession();
 connectSSE();
 loadProducts();
 loadOrders();

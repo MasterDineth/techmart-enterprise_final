@@ -85,3 +85,48 @@ CREATE TABLE IF NOT EXISTS notification_log (
     created_at  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     KEY idx_notif_created (created_at)
 ) ENGINE=InnoDB;
+
+-- ============ User Authentication Tables ============
+CREATE TABLE IF NOT EXISTS app_user (
+    id                      BIGINT AUTO_INCREMENT PRIMARY KEY,
+    username                VARCHAR(64) NOT NULL UNIQUE,
+    email                   VARCHAR(255) NOT NULL UNIQUE,
+    password_hash           VARCHAR(255) NOT NULL,
+    active                  BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at              TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    last_login              TIMESTAMP NULL,
+    concurrent_session_count INT NOT NULL DEFAULT 0,
+    KEY idx_user_active (active),
+    KEY idx_user_email (email),
+    KEY idx_user_created (created_at)
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS user_session (
+    id              BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id         BIGINT NOT NULL,
+    session_token   VARCHAR(255) NOT NULL UNIQUE,
+    active          BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    last_accessed   TIMESTAMP NULL,
+    user_agent      VARCHAR(512),
+    ip_address      VARCHAR(45),
+    KEY idx_session_token (session_token),
+    KEY idx_session_user (user_id),
+    KEY idx_session_active (active),
+    KEY idx_session_created (created_at),
+    CONSTRAINT fk_session_user FOREIGN KEY (user_id) REFERENCES app_user(id)
+) ENGINE=InnoDB;
+
+-- ============ Auth Load Test Metrics ============
+CREATE TABLE IF NOT EXISTS auth_metrics (
+    id                  BIGINT AUTO_INCREMENT PRIMARY KEY,
+    event_type          VARCHAR(32) NOT NULL,
+    response_time_ms    INT NOT NULL,
+    success             BOOLEAN NOT NULL DEFAULT TRUE,
+    error_message       VARCHAR(255),
+    thread_id           VARCHAR(64),
+    created_at          TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    KEY idx_metrics_type (event_type),
+    KEY idx_metrics_created (created_at),
+    KEY idx_metrics_success (success)
+) ENGINE=InnoDB;
