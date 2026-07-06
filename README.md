@@ -413,10 +413,3 @@ jmeter -n -t TechMart-Auth-LoadTest.jmx -l results.jtl -e -o report/
 - deploy/           - WildFly CLI scripts and datasource XML descriptors
 
 ---
-
-If you want, I can also:
-
-- add a short development section explaining how to run the app in an IDE,
-- expand these examples with actual curl commands and full request headers,
-- generate OpenAPI/Swagger definitions from the JAX-RS resources (if you provide the resource sources), or
-- add badges and a license section.
