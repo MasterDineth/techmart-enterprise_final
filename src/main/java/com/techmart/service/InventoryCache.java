@@ -10,11 +10,6 @@ import java.util.logging.Logger;
 
 /**
  * Singleton, container-managed-concurrency cache of available stock per product.
- *
- * <p>Demonstrates EJB read/write locking: reads use {@link LockType#READ} so
- * many threads hit the hot path in parallel, while invalidation takes a brief
- * {@link LockType#WRITE} lock. This shields MySQL from the read storm generated
- * by 10,000 concurrent shoppers browsing availability.</p>
  */
 @Singleton
 @ConcurrencyManagement(ConcurrencyManagementType.CONTAINER)

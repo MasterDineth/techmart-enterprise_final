@@ -14,15 +14,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.logging.Logger;
 
-/**
- * Stateful session bean holding one shopper's cart between HTTP requests -
- * the "scalable session management for personalized shopping" requirement.
- *
- * <p>Conversational state lives in the bean, not the DB. Lifecycle callbacks
- * are wired up so we can observe passivation/activation as WildFly moves idle
- * carts out of memory under load, and {@link Remove @Remove} on
- * {@link #checkout} deterministically ends the conversation.</p>
- */
+
 @Stateful
 @StatefulTimeout(value = 30, unit = java.util.concurrent.TimeUnit.MINUTES)
 @Monitored
@@ -30,7 +22,7 @@ public class ShoppingCart implements Serializable {
 
     private static final Logger LOG = Logger.getLogger(ShoppingCart.class.getName());
 
-    // productId -> quantity, insertion-ordered for a stable UI.
+    // productId -> quantity
     private final Map<Long, Integer> lines = new LinkedHashMap<>();
 
     @EJB

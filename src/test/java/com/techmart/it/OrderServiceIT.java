@@ -30,10 +30,6 @@ class OrderServiceIT {
     static WebArchive createDeployment() {
         return ShrinkWrap.create(WebArchive.class, "test-order.war")
                 .addPackages(true, "com.techmart")
-                // The JMS destinations are provided by the target server (see
-                // deploy/install.cli and the deployed techmart.war). Excluding
-                // JmsConfig avoids re-declaring them, which would otherwise fail
-                // deployment with a DuplicateServiceException for orderQueue.
                 .deleteClass(com.techmart.jms.JmsConfig.class)
                 .addAsResource("META-INF/persistence.xml")
                 .addAsWebInfResource(EmptyAsset.INSTANCE, "beans.xml");

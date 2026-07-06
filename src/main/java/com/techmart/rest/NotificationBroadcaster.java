@@ -9,9 +9,7 @@ import jakarta.ws.rs.sse.SseEventSink;
 import java.util.logging.Logger;
 
 /**
- * Application-scoped bridge between the JMS notification topic and connected
- * browsers. The {@link NotificationMDB} calls {@link #broadcast}, and every
- * dashboard holding an SSE connection receives the event in real time.
+ * Application-scoped bridge between the JMS notification topic and connected browsers
  */
 @ApplicationScoped
 public class NotificationBroadcaster {

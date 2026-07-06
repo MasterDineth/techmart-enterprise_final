@@ -37,8 +37,6 @@ class PerformanceIT {
     static WebArchive createDeployment() {
         return ShrinkWrap.create(WebArchive.class, "test-perf.war")
                 .addPackages(true, "com.techmart")
-                // JMS destinations are provided by the target server; excluding
-                // JmsConfig avoids re-declaring them (DuplicateServiceException).
                 .deleteClass(com.techmart.jms.JmsConfig.class)
                 .addAsResource("META-INF/persistence.xml")
                 .addAsWebInfResource(EmptyAsset.INSTANCE, "beans.xml");

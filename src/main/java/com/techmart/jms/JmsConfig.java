@@ -6,10 +6,7 @@ import jakarta.jms.JMSDestinationDefinition;
 import jakarta.jms.JMSDestinationDefinitions;
 
 /**
- * Declares the JMS destinations programmatically so the application is
- * self-contained - the queue and topic are created automatically at deploy
- * time (no manual CLI step required, though {@code deploy/install.cli} does the
- * same for completeness).
+ * Declares the JMS destinations programmatically so the application isself-contained
  */
 @JMSDestinationDefinitions({
         @JMSDestinationDefinition(

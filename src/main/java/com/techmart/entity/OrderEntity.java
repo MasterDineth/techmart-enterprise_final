@@ -8,8 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * A customer order. Named {@code OrderEntity} because {@code ORDER} is a
- * reserved SQL word; the table itself is {@code orders}.
+ * A customer order.
  */
 @Entity
 @Table(name = "orders")

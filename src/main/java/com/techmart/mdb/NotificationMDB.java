@@ -17,11 +17,7 @@ import jakarta.persistence.PersistenceContext;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-/**
- * Message-driven bean subscribing to the notification topic. It persists an
- * audit record and pushes the event to connected browsers over SSE, giving
- * customers the real-time notifications the legacy system lacked.
- */
+
 @MessageDriven(activationConfig = {
         @ActivationConfigProperty(propertyName = "destinationLookup", propertyValue = "java:/jms/topic/notificationTopic"),
         @ActivationConfigProperty(propertyName = "destinationType", propertyValue = "jakarta.jms.Topic"),
@@ -51,10 +47,10 @@ public class NotificationMDB implements MessageListener {
             String type = text.getStringProperty("type");
             String recipient = text.getStringProperty("recipient");
 
-            // 1. Durable audit trail.
+            // Durable audit trail.
             em.persist(new NotificationLog(type, "SSE", recipient, body));
 
-            // 2. Real-time push to the browser dashboard.
+            // Real-time push to the browser dashboard.
             broadcaster.broadcast(type, body);
 
             monitor.incJmsConsumed();

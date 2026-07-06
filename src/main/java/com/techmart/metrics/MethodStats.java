@@ -3,7 +3,6 @@ package com.techmart.metrics;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * Thread-safe rolling statistics for a single monitored operation.
  * All timings are stored in microseconds.
  */
 public class MethodStats {

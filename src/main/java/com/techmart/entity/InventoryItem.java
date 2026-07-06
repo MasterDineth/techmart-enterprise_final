@@ -5,10 +5,6 @@ import java.io.Serializable;
 
 /**
  * Stock level of one product in one warehouse.
- *
- * <p>The {@code @Version} column gives optimistic locking so two concurrent
- * checkouts can never both reserve the last unit - the root cause of the
- * legacy system's overselling problem.</p>
  */
 @Entity
 @Table(name = "inventory_item",
@@ -36,7 +32,7 @@ public class InventoryItem implements Serializable {
     @Column(nullable = false)
     private int quantity;
 
-    /** Units held for in-flight orders but not yet shipped. */
+    /** Units held for incomming orders but not yet shipped. */
     @Column(nullable = false)
     private int reserved;
 

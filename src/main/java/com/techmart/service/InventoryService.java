@@ -14,12 +14,6 @@ import java.util.logging.Logger;
 
 /**
  * Stateless bean owning all stock mutations across warehouses.
- *
- * <p>Reservation walks a product's warehouses (most-stocked first) and commits
- * with optimistic locking via {@link InventoryItem}'s {@code @Version} column.
- * If two checkouts race for the last unit, one commit wins and the other gets
- * an {@code OptimisticLockException} and retries against fresh data - so stock
- * can never go negative (no overselling).</p>
  */
 @Stateless
 @Monitored
