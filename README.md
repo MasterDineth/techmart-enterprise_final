@@ -17,6 +17,10 @@ A highly scalable, event-driven e‑commerce platform modernization prototype bu
 - [REST API Reference](#rest-api-reference)
   - [Authentication Endpoints](#authentication-endpoints)
   - [Commerce Endpoints](#commerce-endpoints)
+- [Example Request / Response JSON](#example-request--response-json)
+  - [Authentication](#authentication)
+  - [Orders](#orders)
+  - [Products](#products)
 - [Testing & Performance Validation](#testing--performance-validation)
 - [Project Structure](#project-structure)
 
@@ -110,13 +114,262 @@ All backend services are exposed under the base path `http://localhost:8080/tech
 | Method | Endpoint                  | Description                                                   |
 |--------|---------------------------|---------------------------------------------------------------|
 | GET    | /products                 | Retrieves the catalog with real-time inventory availability    |
+| GET    | /products/{id}            | Retrieves a single product detail                             |
 | GET    | /inventory                | Retrieves detailed inventory metrics across all warehouses    |
 | POST   | /orders                   | Submits a new order payload for asynchronous processing       |
 | GET    | /orders                   | Retrieves recent orders                                        |
+| GET    | /orders/{id}              | Retrieves a single order                                      |
 | GET    | /metrics                  | Returns performance counters and per-method execution times   |
 | GET    | /notifications/stream     | Server-Sent Events (SSE) stream for live notifications        |
 
 > Note: All endpoints are rooted at `/api` (for example: `http://localhost:8080/techmart/api/products`).
+
+## Example Request / Response JSON
+
+This section provides concrete example request and response payloads for commonly used endpoints, assembled from the project's documentation and the authentication guide.
+
+### Authentication
+
+Register (POST /api/auth/register)
+
+Request:
+
+```json
+{
+  "username": "john_doe",
+  "email": "john@example.com",
+  "password": "securePass123"
+}
+```
+
+Response (201 Created):
+
+```json
+{
+  "success": true,
+  "message": "User registered successfully",
+  "userId": 1,
+  "username": "john_doe"
+}
+```
+
+Login (POST /api/auth/login)
+
+Request:
+
+```json
+{
+  "username": "john_doe",
+  "password": "securePass123"
+}
+```
+
+Response (200 OK):
+
+```json
+{
+  "success": true,
+  "message": "Login successful",
+  "sessionToken": "VGVzdEJhY2tUb2tlbg==",
+  "userId": 1,
+  "username": "john_doe",
+  "concurrentSessions": 2
+}
+```
+
+Validate (GET /api/auth/validate)
+
+Request headers: `X-Session-Token: <token>`
+
+Response (200 OK):
+
+```json
+{
+  "success": true,
+  "message": "Session valid",
+  "userId": 1,
+  "username": "john_doe",
+  "concurrentSessions": 2
+}
+```
+
+Logout (POST /api/auth/logout)
+
+Request headers: `X-Session-Token: <token>`
+
+Response (200 OK):
+
+```json
+{
+  "success": true,
+  "message": "Logout successful"
+}
+```
+
+Get Sessions (GET /api/auth/sessions)
+
+Request headers: `X-Session-Token: <token>`
+
+Response (200 OK):
+
+```json
+[
+  {
+    "id": 1,
+    "userId": 1,
+    "sessionToken": "VGVzdDE=",
+    "active": true,
+    "createdAt": "2026-07-06T11:00:00",
+    "lastAccessed": "2026-07-06T11:45:00",
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+    "ipAddress": "192.168.1.100"
+  },
+  {
+    "id": 2,
+    "userId": 1,
+    "sessionToken": "VGVzdDI=",
+    "active": true,
+    "createdAt": "2026-07-06T11:30:00",
+    "lastAccessed": "2026-07-06T11:40:00",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)",
+    "ipAddress": "192.168.1.101"
+  }
+]
+```
+
+### Orders
+
+Place Order (POST /api/orders)
+
+Request:
+
+```json
+{
+  "customerName": "Alice",
+  "customerEmail": "alice@example.com",
+  "lines": [
+    { "productId": 1, "quantity": 2 },
+    { "productId": 3, "quantity": 1 }
+  ]
+}
+```
+
+Response (202 Accepted - queued for async fulfillment):
+
+```json
+{
+  "orderId": 101,
+  "status": "PENDING",
+  "message": "Order received and queued for processing",
+  "estimatedFulfilment": "2026-07-06T12:10:00Z"
+}
+```
+
+Get Recent Orders (GET /api/orders)
+
+Response (200 OK):
+
+```json
+[
+  {
+    "orderId": 101,
+    "userId": 1,
+    "status": "PENDING",
+    "total": 149.98,
+    "createdAt": "2026-07-06T11:05:00Z",
+    "lines": [
+      { "productId": 1, "quantity": 2, "unitPrice": 49.99 },
+      { "productId": 3, "quantity": 1, "unitPrice": 49.99 }
+    ]
+  },
+  {
+    "orderId": 100,
+    "userId": 2,
+    "status": "CONFIRMED",
+    "total": 29.99,
+    "createdAt": "2026-07-06T10:50:00Z",
+    "lines": [
+      { "productId": 2, "quantity": 1, "unitPrice": 29.99 }
+    ]
+  }
+]
+```
+
+Get Single Order (GET /api/orders/{id})
+
+Response (200 OK):
+
+```json
+{
+  "orderId": 101,
+  "userId": 1,
+  "status": "PENDING",
+  "total": 149.98,
+  "createdAt": "2026-07-06T11:05:00Z",
+  "lines": [
+    { "productId": 1, "quantity": 2, "unitPrice": 49.99 },
+    { "productId": 3, "quantity": 1, "unitPrice": 49.99 }
+  ],
+  "fulfilmentNotes": null
+}
+```
+
+### Products
+
+List Products (GET /api/products)
+
+Response (200 OK):
+
+```json
+[
+  {
+    "productId": 1,
+    "sku": "TM-001",
+    "name": "Wireless Headphones",
+    "price": 49.99,
+    "currency": "USD",
+    "availableQuantity": 120,
+    "warehouses": [
+      { "warehouseId": 1, "quantity": 60 },
+      { "warehouseId": 2, "quantity": 60 }
+    ]
+  },
+  {
+    "productId": 2,
+    "sku": "TM-002",
+    "name": "USB-C Charger",
+    "price": 29.99,
+    "currency": "USD",
+    "availableQuantity": 300,
+    "warehouses": [
+      { "warehouseId": 2, "quantity": 200 },
+      { "warehouseId": 3, "quantity": 100 }
+    ]
+  }
+]
+```
+
+Get Single Product (GET /api/products/{id})
+
+Response (200 OK):
+
+```json
+{
+  "productId": 1,
+  "sku": "TM-001",
+  "name": "Wireless Headphones",
+  "description": "Over-ear, noise-isolating headphones with 20h battery life.",
+  "price": 49.99,
+  "currency": "USD",
+  "availableQuantity": 120,
+  "warehouses": [
+    { "warehouseId": 1, "quantity": 60 },
+    { "warehouseId": 2, "quantity": 60 }
+  ]
+}
+```
+
+> Notes: Example payloads merge information from the authentication setup guide (DB tables and auth endpoints) and the old README architecture notes. Use these as API documentation examples; actual fields returned may vary slightly depending on the deployed version.
 
 ## Testing & Performance Validation
 
@@ -156,7 +409,7 @@ jmeter -n -t TechMart-Auth-LoadTest.jmx -l results.jtl -e -o report/
   - metrics/  - Lock-free performance monitoring and interceptors
 - src/main/webapp/  - Frontend HTML, Tailwind CSS, and vanilla JavaScript
 - src/test/java/    - JUnit 5 and Arquillian integration tests
-- db/               - MySQL schema and migration scripts
+- db/               - MySQL schema and migration scripts (includes `app_user`, `user_session`, `auth_metrics` additions)
 - deploy/           - WildFly CLI scripts and datasource XML descriptors
 
 ---
@@ -164,5 +417,6 @@ jmeter -n -t TechMart-Auth-LoadTest.jmx -l results.jtl -e -o report/
 If you want, I can also:
 
 - add a short development section explaining how to run the app in an IDE,
-- include example request/response JSON for key endpoints, or
+- expand these examples with actual curl commands and full request headers,
+- generate OpenAPI/Swagger definitions from the JAX-RS resources (if you provide the resource sources), or
 - add badges and a license section.
