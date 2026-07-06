@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <title>TechMart Enterprise - Login</title>
+    <!-- Tailwind CSS injected via CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-900 text-slate-200 min-h-screen flex items-center justify-center font-sans p-4 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-slate-900 via-blue-950 to-slate-900">
+<div class="w-full max-w-md">
+    <div class="bg-slate-800 rounded-2xl p-8 border border-slate-700 shadow-2xl">
+        <div class="text-center mb-8">
+            <h1 class="text-3xl font-bold mb-2 bg-gradient-to-br from-blue-400 to-purple-500 bg-clip-text text-transparent">⚡ TechMart</h1>
+            <p class="text-slate-400 text-sm">Enterprise Dashboard</p>
+        </div>
+
+        <div id="alert" class="hidden px-4 py-3 rounded-lg text-sm mb-6 border"></div>
+
+        <div class="flex gap-4 mb-6 border-b border-slate-700">
+            <button id="btn-login" class="tab-btn flex-1 pb-3 text-sm font-semibold text-blue-400 border-b-2 border-blue-500 transition-colors" onclick="switchTab('login')">Login</button>
+            <button id="btn-register" class="tab-btn flex-1 pb-3 text-sm font-semibold text-slate-400 border-b-2 border-transparent hover:text-slate-300 transition-colors" onclick="switchTab('register')">Register</button>
+        </div>
+
+        <!-- Login Tab -->
+        <div id="login" class="block">
+            <form onsubmit="handleLogin(event)">
+                <div class="mb-4">
+                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1.5">Username</label>
+                    <input type="text" id="login-username" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2.5 text-slate-200 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all" placeholder="Enter username" required/>
+                </div>
+                <div class="mb-6">
+                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1.5">Password</label>
+                    <input type="password" id="login-password" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2.5 text-slate-200 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all" placeholder="Enter password" required/>
+                </div>
+                <button type="submit" class="w-full py-2.5 rounded-lg font-semibold text-sm transition-opacity hover:opacity-90 bg-gradient-to-br from-blue-600 to-purple-600 text-white flex justify-center items-center">
+                    <span id="login-btn-text">Sign In</span>
+                    <div id="login-loading" class="hidden items-center">
+                        <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                        Signing in...
+                    </div>
+                </button>
+            </form>
+            <div id="login-concurrent" class="hidden bg-blue-900/30 border border-blue-800/50 rounded-lg p-3 mt-5 text-sm text-blue-300"></div>
+        </div>
+
+        <!-- Register Tab -->
+        <div id="register" class="hidden">
+            <form onsubmit="handleRegister(event)">
+                <div class="mb-4">
+                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1.5">Username</label>
+                    <input type="text" id="register-username" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2.5 text-slate-200 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all" placeholder="Choose username" required/>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1.5">Email</label>
+                    <input type="email" id="register-email" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2.5 text-slate-200 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all" placeholder="Enter email address" required/>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1.5">Password</label>
+                    <input type="password" id="register-password" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2.5 text-slate-200 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all" placeholder="Min 6 characters" minlength="6" required/>
+                </div>
+                <div class="mb-6">
+                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1.5">Confirm Password</label>
+                    <input type="password" id="register-confirm" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2.5 text-slate-200 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all" placeholder="Confirm password" required/>
+                </div>
+                <button type="submit" class="w-full py-2.5 rounded-lg font-semibold text-sm transition-opacity hover:opacity-90 bg-gradient-to-br from-blue-600 to-purple-600 text-white flex justify-center items-center">
+                    <span id="register-btn-text">Create Account</span>
+                    <div id="register-loading" class="hidden items-center">
+                        <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                        Registering...
+                    </div>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Load Test Info -->
+    <div class="text-center mt-8 text-slate-500 text-xs">
+        <p>💡 For concurrent load testing:</p>
+        <p class="mt-1">Use <strong>JMeter</strong> with thread groups for simultaneous login/register scenarios</p>
+    </div>
+</div>
+
+<script>
+    const API = '/techmart/api';
+    let currentSessionToken = null;
+    let currentUserId = null;
+
+    function switchTab(tabName) {
+        // Hide content
+        document.getElementById('login').classList.add('hidden');
+        document.getElementById('register').classList.add('hidden');
+
+        // Show selected content
+        document.getElementById(tabName).classList.remove('hidden');
+
+        // Reset button styles
+        const btnLogin = document.getElementById('btn-login');
+        const btnRegister = document.getElementById('btn-register');
+
+        [btnLogin, btnRegister].forEach(btn => {
+            btn.classList.remove('text-blue-400', 'border-blue-500');
+            btn.classList.add('text-slate-400', 'border-transparent');
+        });
+
+        // Activate selected button style
+        const activeBtn = document.getElementById('btn-' + tabName);
+        activeBtn.classList.remove('text-slate-400', 'border-transparent');
+        activeBtn.classList.add('text-blue-400', 'border-blue-500');
+
+        hideAlert();
+    }
+
+    async function handleLogin(event) {
+        event.preventDefault();
+        const username = document.getElementById('login-username').value.trim();
+        const password = document.getElementById('login-password').value;
+
+        if (!username || !password) {
+            showAlert('Username and password are required', 'error');
+            return;
+        }
+
+        setLoginLoading(true);
+        try {
+            const res = await fetch(`${API}/auth/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            });
+
+            const data = await res.json();
+
+            if (res.ok) {
+                currentSessionToken = data.sessionToken;
+                currentUserId = data.userId;
+                showAlert(`Welcome back, ${data.username}! Concurrent sessions: ${data.concurrentSessions}`, 'success');
+
+                const concurrentDiv = document.getElementById('login-concurrent');
+                concurrentDiv.innerHTML = `📊 Active sessions: <strong>${data.concurrentSessions}</strong>`;
+                concurrentDiv.classList.remove('hidden');
+
+                setTimeout(() => {
+                    // Redirects to index.html directly to fix 404 error
+                    window.location.href = '/techmart/dashboard.html?token=' + currentSessionToken;
+                }, 2000);
+            } else {
+                showAlert(data.message || 'Login failed', 'error');
+            }
+        } catch (e) {
+            showAlert('Network error: ' + e.message, 'error');
+        } finally {
+            setLoginLoading(false);
+        }
+    }
+
+    async function handleRegister(event) {
+        event.preventDefault();
+        const username = document.getElementById('register-username').value.trim();
+        const email = document.getElementById('register-email').value.trim();
+        const password = document.getElementById('register-password').value;
+        const confirm = document.getElementById('register-confirm').value;
+
+        if (!username || !email || !password || !confirm) {
+            showAlert('All fields are required', 'error');
+            return;
+        }
+
+        if (password !== confirm) {
+            showAlert('Passwords do not match', 'error');
+            return;
+        }
+
+        if (password.length < 6) {
+            showAlert('Password must be at least 6 characters', 'error');
+            return;
+        }
+
+        setRegisterLoading(true);
+        try {
+            const res = await fetch(`${API}/auth/register`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, email, password })
+            });
+
+            const data = await res.json();
+
+            if (res.status === 201) {
+                showAlert('Account created! Please login.', 'success');
+                setTimeout(() => {
+                    document.getElementById('register-username').value = '';
+                    document.getElementById('register-email').value = '';
+                    document.getElementById('register-password').value = '';
+                    document.getElementById('register-confirm').value = '';
+                    switchTab('login');
+                }, 1500);
+            } else {
+                showAlert(data.message || 'Registration failed', 'error');
+            }
+        } catch (e) {
+            showAlert('Network error: ' + e.message, 'error');
+        } finally {
+            setRegisterLoading(false);
+        }
+    }
+
+    function setLoginLoading(loading) {
+        document.getElementById('login-btn-text').classList.toggle('hidden', loading);
+        document.getElementById('login-loading').classList.toggle('hidden', !loading);
+        document.getElementById('login-loading').classList.toggle('flex', loading);
+    }
+
+    function setRegisterLoading(loading) {
+        document.getElementById('register-btn-text').classList.toggle('hidden', loading);
+        document.getElementById('register-loading').classList.toggle('hidden', !loading);
+        document.getElementById('register-loading').classList.toggle('flex', loading);
+    }
+
+    function showAlert(message, type) {
+        const alertEl = document.getElementById('alert');
+        alertEl.textContent = message;
+
+        // Reset base classes
+        alertEl.className = 'px-4 py-3 rounded-lg text-sm mb-6 border block';
+
+        if (type === 'success') {
+            alertEl.classList.add('bg-green-900/50', 'text-green-300', 'border-green-800');
+        } else if (type === 'error') {
+            alertEl.classList.add('bg-red-900/50', 'text-red-300', 'border-red-800');
+        }
+    }
+
+    function hideAlert() {
+        document.getElementById('alert').className = 'hidden';
+    }
+
+    // Check if already logged in
+    window.addEventListener('load', () => {
+        const token = new URLSearchParams(window.location.search).get('token');
+        if (token) {
+            window.location.href = '/techmart/dashboard.html?token=' + token;
+        }
+    });
+</script>
+</body>
+</html>
