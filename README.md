@@ -1,227 +1,218 @@
-# TechMart Enterprise Platform
+TechMart Enterprise Platform
 
-Jakarta EE modernization prototype for TechMart Online — WildFly + MySQL.
+A highly scalable, event-driven e-commerce platform modernization prototype built with the Jakarta EE stack. This project demonstrates enterprise architectural patterns, including asynchronous message processing, stateful session management, concurrent load handling, and secure user authentication.
 
-## Architecture Overview
+System Architecture Highlights
 
-```
-Browser (index.html)
-  │  REST/JSON ──► JAX-RS Resources (/api/*)
-  │  SSE ────────► SseResource ──► NotificationBroadcaster
-  │
-  ├─ OrderResource      POST /api/orders, GET /api/orders
-  ├─ ProductResource    GET  /api/products
-  ├─ InventoryResource  GET  /api/inventory
-  └─ MetricsResource    GET  /api/metrics
+Application Server: WildFly 31+ (Full Profile)
 
-JAX-RS ──► EJB Services (Stateless, pooled)
-  ├─ OrderService      placeOrder → JMS queue → OrderProcessorMDB → fulfilOrder
-  ├─ ProductService    catalogue reads (NamedQuery + 2nd-level cache)
-  ├─ InventoryService  optimistic-lock reservation (no overselling)
-  └─ CustomerService   get-or-create guest checkout
+Core Framework: Jakarta EE 10 (EJB, CDI, JPA, JAX-RS)
 
-JMS
-  ├─ orderQueue        → OrderProcessorMDB  (pool=20, persistent)
-  └─ notificationTopic → NotificationMDB    (pool=10, non-persistent, TTL=60s)
-                              └─► NotificationBroadcaster ──► SSE clients
+Database: MySQL 8.x with HikariCP-style connection pooling
 
-Singletons
-  ├─ PerformanceMonitor  lock-free metrics registry (@Startup)
-  ├─ InventoryCache      container-managed concurrency read/write lock
-  ├─ StartupService      JNDI verify + demo data seed
-  └─ JmsConfig           @JMSDestinationDefinition declarations
+Messaging: Embedded Artemis (JMS) for asynchronous order fulfillment
 
-Stateful
-  └─ ShoppingCart        per-session cart, @StatefulTimeout=30 min
-```
+Security: PBKDF2 (SHA-256) password hashing with 100,000 iterations
 
-## Prerequisites
+Concurrency Control: JPA Optimistic Locking (@Version) to prevent inventory overselling
 
-| Tool | Version |
-|------|---------|
-| JDK  | 17+ |
-| WildFly | 31+ (Full Profile) |
-| MySQL | 8.x |
-| Maven | 3.9+ |
+Performance: Lock-free AtomicLong metrics monitoring and in-memory container-managed read caches
 
-## Quick Start
+Prerequisites
 
-### 1. Database
+Ensure the following software is installed on your deployment environment:
 
-```bash
+JDK 17 or higher
+
+WildFly 31 or higher (Full Profile)
+
+MySQL 8.0 or higher
+
+Maven 3.8 or higher
+
+Apache JMeter (for load testing)
+
+Quick Start & Deployment
+
+1. Database Initialization
+
+The application requires a MySQL database to store product catalog data, orders, and user authentication metrics. Execute the provided schema script to create the database and required tables:
+
 mysql -u root -p < db/schema.sql
-```
 
-This creates the `techmart` database, the `techmart` user, and all tables.
 
-### 2. WildFly — MySQL Driver + Datasource
+2. WildFly Configuration
 
-**Option A — CLI script (recommended)**
+Configure WildFly with the MySQL JDBC driver and the application datasource. Edit the deploy/install.cli script to point to your local mysql-connector-j-8.4.0.jar path, then execute:
 
-Edit `deploy/install.cli` and replace `/path/to/mysql-connector-j-8.4.0.jar` with the actual path, then:
-
-```bash
 # Start WildFly with full profile
 $WILDFLY_HOME/bin/standalone.sh -c standalone-full.xml
 
-# In another terminal
+# Execute the CLI script in a separate terminal
 $WILDFLY_HOME/bin/jboss-cli.sh --connect --file=deploy/install.cli
-```
 
-**Option B — Deployable datasource**
 
-1. Install the MySQL driver module manually under `$WILDFLY_HOME/modules/com/mysql/main/`.
-2. Copy `deploy/techmart-ds.xml` to `$WILDFLY_HOME/standalone/deployments/`.
+3. Build and Deploy
 
-### 3. Build & Deploy
+Compile the application and deploy the generated Web Archive (WAR) file to your WildFly server:
 
-```bash
 mvn clean package
 cp target/techmart.war $WILDFLY_HOME/standalone/deployments/
-```
 
-Or use the WildFly Maven plugin (server must be running):
 
-```bash
-mvn wildfly:deploy
-```
+4. Access the Application
 
-### 4. Open the Dashboard
+Once deployment is successful, access the application via your web browser:
 
-```
-http://localhost:8080/techmart/
-```
+Login Interface: http://localhost:8080/techmart/login.html
 
-The `StartupService` seeds 8 demo products across 3 warehouses on first deploy.
+Secure Dashboard: http://localhost:8080/techmart/
 
----
+Security & Session Management
 
-## REST API
+The user authentication module implements enterprise-grade security features:
 
-All endpoints are under `http://localhost:8080/techmart/api/`.
+Cryptographic Hashing: Passwords are never stored in plain-text. They are hashed using PBKDF2 (SHA-256) with 100,000 iterations and a 32-byte cryptographically secure random salt.
 
-### Products
+Stateless Tokens: Session validation utilizes 32-byte secure random tokens with URL-safe Base64 encoding.
 
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | `/products` | List all products with live availability |
-| GET | `/products/{id}` | Single product |
+Concurrent Session Tracking: Supports and tracks multiple simultaneous logins across different devices per user.
 
-### Inventory
+Audit Logging: Captures IP addresses and User-Agent details for active session monitoring.
 
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | `/inventory` | All inventory items per warehouse |
+REST API Reference
 
-### Orders
+All backend services are exposed via JAX-RS endpoints located under the http://localhost:8080/techmart/api/ base path. Protected endpoints require the X-Session-Token header.
 
-| Method | Path | Body | Description |
-|--------|------|------|-------------|
-| POST | `/orders` | `PlaceOrderRequest` JSON | Place a new order |
-| GET | `/orders` | — | List recent orders (max 100) |
-| GET | `/orders/{id}` | — | Single order detail |
+Authentication Endpoints
 
-**Place order example:**
+Method
 
-```bash
-curl -X POST http://localhost:8080/techmart/api/orders \
-  -H 'Content-Type: application/json' \
-  -d '{
-    "customerName": "Alice",
-    "customerEmail": "alice@example.com",
-    "lines": [
-      {"productId": 1, "quantity": 2},
-      {"productId": 3, "quantity": 1}
-    ]
-  }'
-```
+Endpoint
 
-### Metrics
+Description
 
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | `/metrics` | Counters + per-method timing stats |
+POST
 
-### SSE (Live Notifications)
+/auth/register
 
-```
-GET /api/notifications/stream   Accept: text/event-stream
-```
+Creates a new user account (Requires JSON body)
 
-Events: `ORDER_CONFIRMED`, `INVENTORY_LOW`, `notification`
+POST
 
----
+/auth/login
 
-## Running Tests
+Authenticates a user and generates a session token
 
-### Unit Tests (no server required)
+GET
 
-```bash
+/auth/validate
+
+Validates the current session token
+
+POST
+
+/auth/logout
+
+Terminates the active session
+
+GET
+
+/auth/sessions
+
+Retrieves all active concurrent sessions
+
+Commerce Endpoints
+
+Method
+
+Endpoint
+
+Description
+
+GET
+
+/products
+
+Retrieves the catalog with real-time inventory availability
+
+GET
+
+/inventory
+
+Retrieves detailed inventory metrics across all warehouses
+
+POST
+
+/orders
+
+Submits a new order payload for asynchronous processing
+
+GET
+
+/orders
+
+Retrieves recent orders
+
+GET
+
+/metrics
+
+Returns performance counters and per-method execution times
+
+GET
+
+/notifications/stream
+
+Server-Sent Events (SSE) stream for live notifications
+
+Testing & Performance Validation
+
+The platform includes comprehensive testing suites targeting functional correctness and high-load concurrency.
+
+Unit Tests
+
+Executes isolated tests for business logic, including password hashing algorithms and lock-free performance monitors.
+
 mvn test
-```
 
-Covers: `PerformanceMonitor`, `MethodStats`, domain entities, `ShoppingCart`.
 
-### Integration Tests (Arquillian, requires WildFly)
+Integration Tests
 
-```bash
-# Start WildFly first (standalone-full.xml)
+Deploys the application to an Arquillian-managed WildFly container to test database persistence, JMS message queuing, and concurrent authentication load.
+
 mvn verify -Parq-managed -Dwildfly.home=/path/to/wildfly
-```
 
-IT test classes:
-- `ProductServiceIT` — catalogue and inventory queries
-- `OrderServiceIT` — full order placement flow, error paths, metrics recording
-- `PerformanceIT` — concurrent load test (20 users × 5 orders), latency assertion ≤ 500 ms avg
 
----
+JMeter Load Testing
 
-## Performance Design
+A pre-configured JMeter test plan (TechMart-Auth-LoadTest.jmx) is included to validate non-functional requirements (NFRs). Run the load test in headless mode to generate an HTML report:
 
-| Concern | Solution |
-|---------|----------|
-| 10 000+ concurrent users | Stateless EJB pool; WildFly thread pool |
-| Overselling | Optimistic locking (`@Version`) on `InventoryItem` with retry |
-| Sub-second checkout | `placeOrder` only reserves + persists PENDING, then queues; MDB fulfils async |
-| Read storm on inventory | `InventoryCache` singleton (container-managed R/W lock) |
-| DB connection saturation | HikariCP-style pool: min=20, max=200, prepared-stmt cache=64 |
-| JMS throughput | `orderQueue` pool=20 MDB instances; `notificationTopic` NON_PERSISTENT TTL=60s |
-| Batch writes | `hibernate.jdbc.batch_size=50`, ordered inserts/updates |
-| Metrics | Lock-free `AtomicLong` counters + `PerformanceInterceptor` on all `@Monitored` beans |
+jmeter -n -t TechMart-Auth-LoadTest.jmx -l results.jtl -e -o report/
 
----
 
-## Project Structure
+Dashboard Load Simulator
 
-```
+A real-time concurrent load test simulator is integrated directly into the secure dashboard. It allows administrators to simulate up to 50 concurrent users making continuous requests, providing live throughput (req/s) and response time metrics without requiring external tooling.
+
+Project Structure
+
 src/main/java/com/techmart/
-  cart/          ShoppingCart (Stateful EJB)
-  config/        StartupService (Singleton, seeds demo data)
-  dto/           Request/response DTOs
-  entity/        JPA entities + enums
-  interceptor/   @Monitored + PerformanceInterceptor
-  jms/           JmsConfig, OrderMessageProducer, NotificationPublisher
-  mdb/           OrderProcessorMDB, NotificationMDB
-  metrics/       PerformanceMonitor (Singleton), MethodStats
-  rest/          JAX-RS resources + SseResource + NotificationBroadcaster
-  service/       OrderService, ProductService, InventoryService,
-                 CustomerService, InventoryCache
 
-src/main/webapp/
-  index.html     Single-page dashboard (products, cart, orders, metrics, SSE)
-  WEB-INF/
-    web.xml      Session config, distributable
-    beans.xml    CDI activation
+entity/ - JPA Entities (User, Session, Product, Order)
 
-src/main/resources/META-INF/
-  persistence.xml  JTA PU, Hibernate tuning
+service/ - Core business logic and EJB components (Stateless, Stateful, Singleton)
 
-deploy/
-  techmart-ds.xml  Deployable datasource descriptor
-  install.cli      WildFly CLI provisioning script
+rest/ - JAX-RS API Controllers
 
-db/
-  schema.sql       MySQL DDL + user creation
-  
-  mvnw            Maven wrapper
-```
+mdb/ - Message-Driven Beans for asynchronous JMS consumption
+
+metrics/ - Lock-free performance monitoring and interceptors
+
+src/main/webapp/ - Frontend HTML, Tailwind CSS, and vanilla JavaScript
+
+src/test/java/ - JUnit 5 and Arquillian integration tests
+
+db/ - MySQL schema and migration scripts
+
+deploy/ - WildFly CLI scripts and datasource XML descriptors
