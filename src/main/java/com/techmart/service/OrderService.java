@@ -21,20 +21,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * Core order orchestration. Stateless so the container can pool instances and
- * absorb peak-sale bursts.
- *
- * <p>The write path is deliberately split:
- * <ol>
- *   <li>{@link #placeOrder} does only the fast, transactional work (reserve
- *       stock, persist a PENDING order) then drops an id on the JMS queue and
- *       returns - giving the shopper a sub-second response.</li>
- *   <li>{@link #fulfilOrder} runs later on an MDB thread to confirm the order
- *       and fire notifications.</li>
- *   <li>{@link #processOrderAsync} shows the same fulfilment exposed as a true
- *       {@code @Asynchronous} EJB method returning a {@link Future}, with error
- *       handling and self-timing.</li>
- * </ol>
+ * Core order orchestration. Stateless so the container can pool instances and absorb peak-sale bursts.
  */
 @Stateless
 @Monitored
@@ -54,12 +41,11 @@ public class OrderService {
     @Inject private PerformanceMonitor monitor;
 
     /**
-     * Accept an order: reserve stock atomically, persist as PENDING, and queue
-     * it for asynchronous fulfilment.
+     * Accept an order, reserve stock atomically, persist as PENDING, and queue it for asynchronous fulfilment.
      */
     public OrderEntity placeOrder(PlaceOrderRequest request) {
         if (request.getLines() == null || request.getLines().isEmpty()) {
-            throw new IllegalArgumentException("Order must contain at least one line");
+            throw new InvalidOrderException("Order must contain at least one line");
         }
 
         Customer customer = customerService.findOrCreate(request.getCustomerName(), request.getCustomerEmail());
@@ -72,7 +58,7 @@ public class OrderService {
         for (OrderLineRequest line : request.getLines()) {
             Product product = productService.find(line.getProductId());
             if (product == null) {
-                throw new IllegalArgumentException("Unknown product: " + line.getProductId());
+                throw new InvalidOrderException("Unknown product: " + line.getProductId());
             }
             // Reserve first - throws InsufficientStockException (rollback) if short.
             inventoryService.reserve(product.getId(), line.getQuantity());
@@ -94,8 +80,7 @@ public class OrderService {
     }
 
     /**
-     * Confirm a queued order: commit reservations into physical stock and
-     * publish a customer notification. Invoked by the order-processing MDB.
+     * Confirm a queued order, mark as CONFIRMED, and send a notification to the customer.
      */
     public void fulfilOrder(Long orderId) {
         OrderEntity order = em.find(OrderEntity.class, orderId);
@@ -116,9 +101,7 @@ public class OrderService {
     }
 
     /**
-     * Asynchronous EJB fulfilment returning a {@link Future}. Demonstrates the
-     * container's {@code @Asynchronous} support with explicit error handling and
-     * self-measured processing time.
+      * self-measured processing time.
      */
     @Asynchronous
     public Future<ProcessingResult> processOrderAsync(Long orderId) {

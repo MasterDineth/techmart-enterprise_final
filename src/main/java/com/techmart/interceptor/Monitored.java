@@ -8,8 +8,6 @@ import java.lang.annotation.Target;
 
 /**
  * Interceptor binding that switches on transparent performance monitoring.
- * Apply to a class or method and every invocation is timed and recorded in
- * {@link com.techmart.metrics.PerformanceMonitor}.
  */
 @InterceptorBinding
 @Retention(RetentionPolicy.RUNTIME)

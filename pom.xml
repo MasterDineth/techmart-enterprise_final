@@ -15,7 +15,6 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.release>17</maven.compiler.release>
 
-        <!-- Jakarta EE 10/11 API versions (provided by WildFly 31+) -->
         <jakartaee.version>10.0.0</jakartaee.version>
 
         <junit.version>5.11.0</junit.version>
@@ -38,9 +37,6 @@
     </dependencyManagement>
 
     <dependencies>
-        <!-- ================= Jakarta EE 10 Web Profile + Full APIs ================= -->
-        <!-- Single aggregate API keeps all component versions consistent and is
-             marked 'provided' because WildFly supplies the implementations. -->
         <dependency>
             <groupId>jakarta.platform</groupId>
             <artifactId>jakarta.jakartaee-api</artifactId>
@@ -56,7 +52,7 @@
             <scope>test</scope>
         </dependency>
 
-        <!-- Arquillian (integration + in-container performance tests) -->
+        <!-- Arquillian  -->
         <dependency>
             <groupId>org.jboss.arquillian.junit5</groupId>
             <artifactId>arquillian-junit5-container</artifactId>
@@ -82,20 +78,20 @@
                 </configuration>
             </plugin>
 
-            <!-- Unit tests (fast, no container) -->
+            <!-- Unit tests -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>3.5.0</version>
                 <configuration>
-                    <!-- Arquillian *IT tests are handled by failsafe in the profile below -->
+                    <!-- Arquillian  -->
                     <excludes>
                         <exclude>**/*IT.java</exclude>
                     </excludes>
                 </configuration>
             </plugin>
 
-            <!-- WildFly deploy/undeploy from Maven: mvn wildfly:deploy -->
+            <!-- mvn wildfly:deploy -->
             <plugin>
                 <groupId>org.wildfly.plugins</groupId>
                 <artifactId>wildfly-maven-plugin</artifactId>
@@ -105,8 +101,7 @@
     </build>
 
     <profiles>
-        <!-- Run in-container integration/performance tests:
-             mvn verify -Parq-managed -Dwildfly.home=/path/to/wildfly -->
+        <!-- integration/performance tests-->
         <profile>
             <id>arq-managed</id>
             <build>

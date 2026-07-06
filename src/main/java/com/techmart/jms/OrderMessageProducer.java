@@ -12,11 +12,6 @@ import java.util.logging.Logger;
 
 /**
  * Sends accepted orders onto the JMS order queue.
- *
- * <p>Throughput optimizations: a {@code MapMessage} (tiny payload, no Java
- * serialization / deserialization-allowlist overhead) carrying just the order
- * id, and {@code PERSISTENT} delivery so an order survives a broker restart -
- * durability matters more than raw speed on this path.</p>
  */
 @Stateless
 @Monitored
@@ -46,7 +41,7 @@ public class OrderMessageProducer {
 
             monitor.incJmsProduced();
         } catch (JMSException e) {
-            // JMSRuntimeException would normally surface; wrap checked calls.
+            // wrap checked calls.
             throw new JMSRuntimeException("Failed to enqueue order " + order.getOrderId() + ": " + e.getMessage());
         }
     }

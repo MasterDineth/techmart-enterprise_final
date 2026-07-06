@@ -15,11 +15,6 @@ import java.util.logging.Logger;
 
 /**
  * Central, application-wide performance registry.
- *
- * <p>Implemented as a {@link Singleton} session bean with
- * {@link ConcurrencyManagementType#BEAN BEAN-managed concurrency} so the
- * container never serializes callers - every service, MDB and REST endpoint
- * can record timings concurrently against the lock-free counters.</p>
  */
 @Singleton
 @Startup
@@ -41,7 +36,7 @@ public class PerformanceMonitor {
 
     @PostConstruct
     void init() {
-        // Fixed epoch captured once at boot; used to derive throughput/sec.
+        // Fixed epoch captured once at boot used to derive throughput/sec.
         startedAtMillis = System.currentTimeMillis();
         LOG.info("PerformanceMonitor singleton started - metrics collection active.");
     }

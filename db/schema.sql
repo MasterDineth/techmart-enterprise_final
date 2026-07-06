@@ -1,12 +1,9 @@
--- =============================================================================
---  TechMart Online - MySQL schema (optimized for enterprise-scale reads/writes)
---  Usage:  mysql -u root -p < db/schema.sql
--- =============================================================================
+
 
 CREATE DATABASE IF NOT EXISTS techmart
     CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
--- Dedicated application user matching the datasource credentials.
+
 CREATE USER IF NOT EXISTS 'techmart'@'%' IDENTIFIED BY 'techmart';
 GRANT ALL PRIVILEGES ON techmart.* TO 'techmart'@'%';
 FLUSH PRIVILEGES;
@@ -33,14 +30,13 @@ CREATE TABLE IF NOT EXISTS warehouse (
     UNIQUE KEY uk_warehouse_code (code)
 ) ENGINE=InnoDB;
 
--- Inventory per (product, warehouse) - the multi-warehouse sync core.
 CREATE TABLE IF NOT EXISTS inventory_item (
     id            BIGINT AUTO_INCREMENT PRIMARY KEY,
     product_id    BIGINT NOT NULL,
     warehouse_id  BIGINT NOT NULL,
     quantity      INT NOT NULL DEFAULT 0,
     reserved      INT NOT NULL DEFAULT 0,
-    version       BIGINT NOT NULL DEFAULT 0,   -- optimistic lock: prevents overselling
+    version       BIGINT NOT NULL DEFAULT 0,
     UNIQUE KEY uk_inv_prod_wh (product_id, warehouse_id),
     KEY idx_inv_product (product_id),
     CONSTRAINT fk_inv_product   FOREIGN KEY (product_id)   REFERENCES product(id),
