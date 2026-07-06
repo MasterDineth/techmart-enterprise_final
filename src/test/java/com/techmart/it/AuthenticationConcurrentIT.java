@@ -6,11 +6,11 @@ import com.techmart.dto.RegisterRequest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
 
-import javax.ws.rs.client.Client;
-import javax.ws.rs.client.ClientBuilder;
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.client.Client;
+import jakarta.ws.rs.client.ClientBuilder;
+import jakarta.ws.rs.client.Entity;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -31,7 +31,7 @@ public class AuthenticationConcurrentIT {
     public void testConcurrentRegistrations() throws Exception {
         ExecutorService executor = Executors.newFixedThreadPool(10);
         List<CompletableFuture<Boolean>> futures = new ArrayList<>();
-        
+
         for (int i = 0; i < 50; i++) {
             final int index = i;
             futures.add(CompletableFuture.supplyAsync(() -> registerUser(index), executor));
@@ -84,7 +84,7 @@ public class AuthenticationConcurrentIT {
         Response regRes = client.target(BASE_URL + "/register")
                 .request(MediaType.APPLICATION_JSON)
                 .post(Entity.entity(reg, MediaType.APPLICATION_JSON));
-        
+
         assert regRes.getStatus() == 201;
         regRes.close();
 
@@ -98,7 +98,7 @@ public class AuthenticationConcurrentIT {
                 Response res = client.target(BASE_URL + "/login")
                         .request(MediaType.APPLICATION_JSON)
                         .post(Entity.entity(login, MediaType.APPLICATION_JSON));
-                
+
                 if (res.getStatus() == 200) {
                     AuthResponse auth = res.readEntity(AuthResponse.class);
                     res.close();

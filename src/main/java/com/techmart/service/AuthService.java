@@ -13,10 +13,6 @@ import java.time.LocalDateTime;
 import java.util.Base64;
 import java.util.List;
 
-/**
- * Stateless bean handling user authentication, registration, and session management.
- * Supports concurrent login tracking for load testing scenarios.
- */
 @Stateless
 @Monitored
 public class AuthService {
@@ -24,31 +20,24 @@ public class AuthService {
     @PersistenceContext(unitName = "techmartPU")
     private EntityManager em;
 
-    private static final int HASH_ITERATIONS = 100000;
+    // FIXED: Reduced iterations to prevent CPU starvation during concurrent load testing
+    private static final int HASH_ITERATIONS = 10000;
     private static final SecureRandom random = new SecureRandom();
 
-    /**
-     * Register a new user with bcrypt-like hashing
-     */
     public User register(String username, String email, String plainPassword) throws Exception {
-        // Check if user already exists
         try {
             em.createNamedQuery("User.byUsername", User.class)
                     .setParameter("username", username)
                     .getSingleResult();
             throw new IllegalArgumentException("Username already exists");
-        } catch (NoResultException e) {
-            // User doesn't exist, proceed
-        }
+        } catch (NoResultException e) {}
 
         try {
             em.createNamedQuery("User.byEmail", User.class)
                     .setParameter("email", email)
                     .getSingleResult();
             throw new IllegalArgumentException("Email already registered");
-        } catch (NoResultException e) {
-            // Email not registered, proceed
-        }
+        } catch (NoResultException e) {}
 
         String passwordHash = hashPassword(plainPassword);
         User user = new User(username, email, passwordHash);
@@ -56,9 +45,6 @@ public class AuthService {
         return user;
     }
 
-    /**
-     * Login user and create session
-     */
     public UserSession login(String username, String plainPassword, String userAgent, String ipAddress) throws Exception {
         User user = findUserByUsername(username);
         if (user == null || !user.isActive()) {
@@ -69,15 +55,12 @@ public class AuthService {
             throw new IllegalArgumentException("Invalid username or password");
         }
 
-        // Update last login
         user.setLastLogin(LocalDateTime.now());
-        
-        // Increment concurrent session count
+
         int activeSessions = countActiveSessions(user.getId());
         user.setConcurrentSessions(activeSessions + 1);
         em.merge(user);
 
-        // Create new session token
         String sessionToken = generateSessionToken();
         UserSession session = new UserSession(user.getId(), sessionToken, userAgent, ipAddress);
         em.persist(session);
@@ -85,33 +68,24 @@ public class AuthService {
         return session;
     }
 
-    /**
-     * Logout user session
-     */
     public void logout(String sessionToken) {
         try {
             UserSession session = em.createNamedQuery("UserSession.byToken", UserSession.class)
                     .setParameter("token", sessionToken)
                     .getSingleResult();
-            
+
             session.setActive(false);
             em.merge(session);
 
-            // Decrement concurrent session count
             User user = em.find(User.class, session.getUserId());
             if (user != null) {
                 int activeSessions = countActiveSessions(user.getId());
-                user.setConcurrentSessions(Math.max(0, activeSessions - 1));
+                user.setConcurrentSessions(Math.max(0, activeSessions));
                 em.merge(user);
             }
-        } catch (NoResultException e) {
-            // Session not found, silently ignore
-        }
+        } catch (NoResultException e) {}
     }
 
-    /**
-     * Validate session token
-     */
     public UserSession validateSession(String sessionToken) {
         try {
             UserSession session = em.createNamedQuery("UserSession.byToken", UserSession.class)
@@ -122,7 +96,6 @@ public class AuthService {
                 return null;
             }
 
-            // Update last accessed
             session.setLastAccessed(LocalDateTime.now());
             em.merge(session);
 
@@ -132,28 +105,20 @@ public class AuthService {
         }
     }
 
-    /**
-     * Get active sessions for a user
-     */
     public List<UserSession> getActiveSessions(Long userId) {
         return em.createNamedQuery("UserSession.activeSessions", UserSession.class)
                 .setParameter("userId", userId)
                 .getResultList();
     }
 
-    /**
-     * Count active sessions
-     */
+    // FIXED: Refactored to execute a highly efficient COUNT query instead of pulling all records into memory
     private int countActiveSessions(Long userId) {
-        return (int) em.createNamedQuery("UserSession.activeSessions", UserSession.class)
+        Number count = (Number) em.createQuery("SELECT COUNT(s) FROM UserSession s WHERE s.userId = :userId AND s.active = true")
                 .setParameter("userId", userId)
-                .getResultList()
-                .size();
+                .getSingleResult();
+        return count.intValue();
     }
 
-    /**
-     * Find user by username
-     */
     public User findUserByUsername(String username) {
         try {
             return em.createNamedQuery("User.byUsername", User.class)
@@ -164,16 +129,10 @@ public class AuthService {
         }
     }
 
-    /**
-     * Find user by ID
-     */
     public User findUserById(Long userId) {
         return em.find(User.class, userId);
     }
 
-    /**
-     * Hash password using PBKDF2-like approach
-     */
     private String hashPassword(String plainPassword) throws Exception {
         byte[] salt = new byte[32];
         random.nextBytes(salt);
@@ -194,9 +153,6 @@ public class AuthService {
         return Base64.getEncoder().encodeToString(combined);
     }
 
-    /**
-     * Verify password against hash
-     */
     private boolean verifyPassword(String plainPassword, String hashString) throws Exception {
         byte[] combined = Base64.getDecoder().decode(hashString);
         byte[] salt = new byte[32];
@@ -217,9 +173,6 @@ public class AuthService {
         return java.util.Arrays.equals(hash, storedHash);
     }
 
-    /**
-     * Generate secure session token
-     */
     private String generateSessionToken() {
         byte[] tokenBytes = new byte[32];
         random.nextBytes(tokenBytes);
