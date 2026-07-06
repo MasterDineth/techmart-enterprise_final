@@ -15,12 +15,6 @@ import java.util.logging.Logger;
 
 /**
  * Message-driven bean that fulfils queued orders asynchronously.
- *
- * <p>Lifecycle / throughput optimization: {@code maxSession = 20} lets WildFly
- * run a pool of 20 MDB instances consuming the queue in parallel, and
- * {@code Auto-acknowledge} keeps the ack path cheap. Each message is processed
- * in its own container transaction; an unhandled error triggers redelivery
- * (capped by the broker's max-delivery-attempts).</p>
  */
 @MessageDriven(activationConfig = {
         @ActivationConfigProperty(propertyName = "destinationLookup", propertyValue = "java:/jms/queue/orderQueue"),

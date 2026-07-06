@@ -11,13 +11,7 @@ import jakarta.jms.TextMessage;
 import jakarta.jms.Topic;
 
 /**
- * Publishes application events to the notification topic. Every interested
- * subscriber (the real-time SSE bridge, audit logger, future e-mail/SMS
- * gateways) receives its own copy.
- *
- * <p>Notifications use {@code NON_PERSISTENT} delivery with a short time-to-live:
- * they are latency-sensitive and disposable, so we trade durability for
- * throughput.</p>
+ * Publishes application events to the notification topic.
  */
 @Stateless
 @Monitored

@@ -15,14 +15,7 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.logging.Logger;
 
-/**
- * {@code @Startup} singleton that runs once at deployment. It:
- * <ul>
- *   <li>verifies the pooled datasource via a programmatic <b>JNDI</b> lookup,</li>
- *   <li>seeds a demo catalogue, warehouses and multi-warehouse inventory so the
- *       prototype is usable immediately after deploy.</li>
- * </ul>
- */
+
 @Singleton
 @Startup
 public class StartupService {
@@ -49,7 +42,7 @@ public class StartupService {
     }
 
     private void verifyJndiResources() {
-        // Verify the @Resource-injected datasource is present (Jakarta EE 10 / WildFly 27).
+        // Verify the datasource is present
         LOG.info("JNDI OK: datasource injected via @Resource (present: " + (dataSource != null) + ")");
     }
 

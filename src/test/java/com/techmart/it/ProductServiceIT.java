@@ -28,6 +28,7 @@ class ProductServiceIT {
     static WebArchive createDeployment() {
         return ShrinkWrap.create(WebArchive.class, "test.war")
                 .addPackages(true, "com.techmart")
+                .deleteClass(JmsConfig.class)
                 .addAsResource("META-INF/persistence.xml")
                 .addAsWebInfResource(EmptyAsset.INSTANCE, "beans.xml");
     }

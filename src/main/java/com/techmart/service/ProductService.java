@@ -12,10 +12,6 @@ import java.util.List;
 
 /**
  * Stateless session bean for catalogue reads.
- *
- * <p>{@code @Stateless} beans are pooled by WildFly, so a small number of
- * instances serve thousands of concurrent callers - the core scalability win
- * over the legacy monolith. All methods are {@link Monitored}.</p>
  */
 @Stateless
 @Monitored

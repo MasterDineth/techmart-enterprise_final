@@ -8,8 +8,7 @@ import jakarta.persistence.NoResultException;
 import jakarta.persistence.PersistenceContext;
 
 /**
- * Stateless bean managing customer records. Demonstrates a get-or-create
- * pattern used by guest checkout.
+ * Service for managing customer records. Demonstrates a get-or-create pattern.
  */
 @Stateless
 @Monitored

@@ -30,6 +30,7 @@ class OrderServiceIT {
     static WebArchive createDeployment() {
         return ShrinkWrap.create(WebArchive.class, "test-order.war")
                 .addPackages(true, "com.techmart")
+                .deleteClass(com.techmart.jms.JmsConfig.class)
                 .addAsResource("META-INF/persistence.xml")
                 .addAsWebInfResource(EmptyAsset.INSTANCE, "beans.xml");
     }

@@ -9,11 +9,6 @@ import jakarta.interceptor.InvocationContext;
 
 /**
  * Times every {@link Monitored} business call and feeds the result to the
- * {@link PerformanceMonitor} singleton - the backbone of the platform's
- * "performance metrics display" requirement.
- *
- * <p>Runs with {@code Priority(APPLICATION)} so it wraps the business method
- * but sits inside container-managed transaction/security interceptors.</p>
  */
 @Monitored
 @Interceptor

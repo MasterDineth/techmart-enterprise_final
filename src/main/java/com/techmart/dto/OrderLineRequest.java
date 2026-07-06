@@ -1,6 +1,6 @@
 package com.techmart.dto;
 
-/** One requested line in a {@link PlaceOrderRequest}. */
+
 public class OrderLineRequest {
     private Long productId;
     private int quantity;
